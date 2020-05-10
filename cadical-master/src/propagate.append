@@ -177,8 +177,7 @@ bool Internal::propagate () {
         }
         while (old_trail_qhead != -1 && old_trail_reason != 0 /*&& !(old_trail_reason->garbage)*/) {
           if (val(old_trail_top) < 0) {
-            if (old_trail_reason->size > 10) break;
-            //if (old_trail_reason->used <= 0 && !(old_trail_reason->keep) && old_trail_reason->glue > 5) break;
+            //if (old_trail_reason->size > 10) break;
             conflict = old_trail_reason;
             /*literal_iterator lits = conflict->begin ();
             literal_iterator end = conflict->end ();
@@ -189,7 +188,7 @@ bool Internal::propagate () {
             }
             printf("\n");*/
             break_outer = true;
-            clear_old_trail();
+            //clear_old_trail();
             break;
           }
           else if (val(old_trail_top) == 0) {
@@ -226,10 +225,8 @@ bool Internal::propagate () {
                 //}
                 //printf("\n");
               //}
-              if (old_trail_reason->size > 10) break;
-              //if (old_trail_reason->used <= 0 && !(old_trail_reason->keep) && old_trail_reason->glue > 5 ) break;
+              //if (old_trail_reason->size > 10) break;
               search_assign(old_trail_top, old_trail_reason);
-              //saved_lits++;
               //printf("Restoring: %d\n", old_trail_top);
             }
           }
@@ -242,9 +239,9 @@ bool Internal::propagate () {
         if (break_outer) break;
       }
       //not sure if below is needed
-      if (old_trail_qhead == -1 || val(old_trail[old_trail_qhead]) < 0) {
+      /*if (old_trail_qhead == -1 || val(old_trail[old_trail_qhead]) < 0) {
         clear_old_trail();
-      }
+      }*/
     }
 
 

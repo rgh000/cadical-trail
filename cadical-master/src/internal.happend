@@ -131,7 +131,8 @@ struct Internal {
 
   /*----------------------------------------------------------------------*/
 
-  int64_t saved_lits;
+  int decisions_since_last_bt;
+  size_t old_trail_pivot;
   bool force_dec;
   bool save_trail;
   size_t old_trail_qhead;

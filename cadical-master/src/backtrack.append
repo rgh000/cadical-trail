@@ -84,10 +84,14 @@ void Internal::backtrack (int new_level) {
 
   const size_t end_of_trail = trail.size ();
   size_t i = assigned, j = i;
-  clear_old_trail();
+  //clear_old_trail();
+  if (decisions_since_last_bt == 0) clear_old_trail();
+  decisions_since_last_bt = 0;
+  int otis = old_trail_pivot;
+  size_t eot = (size_t) control[level].trail;
   if (save_trail && !opts.chrono) {
-    old_trail.resize((int) (end_of_trail - i));
-    old_trail_reasons.resize((int) (end_of_trail - i));
+    old_trail.resize((int) (otis + eot - i));
+    old_trail_reasons.resize((int) (otis + eot - i));
   }
 
   int reassigned = 0, unassigned = 0;
@@ -98,9 +102,9 @@ void Internal::backtrack (int new_level) {
     if (v.level > new_level) {
       unassign (lit);
       unassigned++;
-      if (save_trail && !opts.chrono) {
-        old_trail[end_of_trail - i] = lit;
-        old_trail_reasons[end_of_trail - i] = v.reason;
+      if (save_trail && !opts.chrono && i-1 < eot) {
+        old_trail[eot - i + otis] = lit;
+        old_trail_reasons[eot - i + otis] = v.reason;
       }
     } else {
       // This is the essence of the SAT'18 paper on chronological
@@ -127,7 +131,76 @@ void Internal::backtrack (int new_level) {
   if (propagated2 > assigned) propagated2 = assigned;
   if (no_conflict_until > assigned) no_conflict_until = assigned;
 
+  if (old_trail.size() > 2 * max_var && old_trail.size() > 1000000) {
+    //printf("OLD TRAIL SIZE: %d\n", old_trail.size());
+    bool broken = false;
+    for (int z = old_trail.size()-1; z >= 0; z--) {
+      const int old_trail_top = old_trail[z];
+      //const int neg_old_trail_top = -old_trail[z];
+      Flags & f = flags(old_trail_top);
+      //Flags & neg_f = flags(neg_old_trail_top);
+      if (broken) {
+        old_trail[z] = 0;
+      }
+      else if (old_trail[z] > 0 && f.pos_on_old_trail) {
+        f.pos_on_old_trail = false;
+        on_old_trail.push_back(old_trail_top);
+      }
+      else if (old_trail[z] > 0 && !f.pos_on_old_trail) {
+        //printf("Redundant %d %d\n", z, old_trail[z]);
+        old_trail[z] = 0;
+      }
+      else if (old_trail[z] < 0 && f.neg_on_old_trail) {
+        f.neg_on_old_trail = false;
+        on_old_trail.push_back(old_trail_top);
+      }
+      else if (old_trail[z] < 0 && !f.neg_on_old_trail) {
+        //printf("Contradiction %d %d\n", z, old_trail[z]);
+        old_trail[z] = 0;
+        broken = true;
+      }
+      /*if (!f.pos_on_old_trail || broken) {
+        //printf("Redundant %d %d\n", z, old_trail[z]);
+        old_trail[z] = 0;
+      }
+      else if (!f.neg_on_old_trail) {
+        //printf("Contradiction %d %d\n", z, old_trail[z]);
+        old_trail[z] = 0;
+        broken = true;
+      }
+      else {
+        if (old_trail[z] > 0)
+          f.pos_on_old_trail = false;
+        else if (old_trail[z] < 0)
+          f.neg_on_old_trail = false;
+        on_old_trail.push_back(old_trail_top);
+      }*/
+    }
+    int z = 0;
+    for (int y = 0; y < old_trail.size(); y++) {
+      if (old_trail[y] != 0) {
+        old_trail[z] = old_trail[y];
+        old_trail_reasons[z] = old_trail_reasons[y];
+        z++;
+      }
+    }
+    old_trail.resize(z);
+    for (const auto & lit : on_old_trail) {
+      Flags & f = flags(lit);
+      f.pos_on_old_trail = true;
+      f.neg_on_old_trail = true;
+    }
+    on_old_trail.clear();
+    /*printf("NEW OLD TRAIL SIZE: %d, last element: %d\n", old_trail.size(), old_trail[old_trail.size() - 1]);
+    printf("OLD TRAIL:");
+    for (int zz = 0; zz < old_trail.size(); zz++) {
+      printf(" %d", old_trail[zz]);
+    }
+    printf("\n");*/
+  }
+  
   old_trail_qhead = old_trail.size() - 1;
+  old_trail_pivot = old_trail_qhead + 1;
 
   control.resize (new_level + 1);
   level = new_level;

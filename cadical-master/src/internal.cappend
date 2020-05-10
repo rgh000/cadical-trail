@@ -7,7 +7,8 @@ namespace CaDiCaL {
 Internal::Internal ()
 :
   mode (SEARCH),
-  saved_lits(0),
+  decisions_since_last_bt(0),
+  old_trail_pivot(0),
   force_dec(false),
   save_trail(false),
   old_trail_qhead(-1),
@@ -212,7 +213,6 @@ int Internal::cdcl_loop_with_inprocessing () {
   else        { STOP (unstable); report ('}'); }
 
   STOP (search);
-  //printf("saved_lits:%" PRId64 "\n", saved_lits);
 
   return res;
 }
